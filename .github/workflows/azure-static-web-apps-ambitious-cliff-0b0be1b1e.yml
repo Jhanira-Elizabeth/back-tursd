@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: '18' # o la versión que uses
 
+      - name: Install Angular CLI globally
+        run: npm install -g @angular/cli
+
       - name: Install dependencies
         run: npm install
 
@@ -43,7 +46,7 @@ jobs:
           api_location: ""
           output_location: "dist/back-tursd/browser"
           github_id_token: ${{ steps.idtoken.outputs.result }}
-          app_artifact_location: "/github/workspace/dist/back-tursd/browser" # Dejamos la ruta absoluta
+          app_artifact_location: "/github/workspace/dist/back-tursd/browser"
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
