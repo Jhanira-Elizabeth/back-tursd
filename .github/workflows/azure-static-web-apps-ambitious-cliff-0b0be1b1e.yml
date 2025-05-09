@@ -22,6 +22,8 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - name: Navigate to Angular project root
+        run: cd ./ # O cd ./frontend si tu proyecto no está en la raíz
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get Id Token
