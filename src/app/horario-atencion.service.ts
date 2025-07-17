@@ -19,7 +19,7 @@ export interface HorarioAtencion {
   providedIn: 'root',
 })
 export class HorariosAtencionService {
-  private apiUrl = 'https://tursd-grhzehh6hta4e9en.eastus-01.azurewebsites.net/api/v1/horarios-atencion'; // Ajusta la URL si es diferente
+  private apiUrl = 'https://tursd-grhzehh6hta4e9en.eastus-01.azurewebsites.net/api/v1/horarios'; 
 
   constructor(private http: HttpClient) {}
 

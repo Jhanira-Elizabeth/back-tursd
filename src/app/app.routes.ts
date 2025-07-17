@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LocalesListaComponent } from './locales-lista/locales-lista.component'; // Asegúrate de crear este componente
+import { LocalesListaComponent } from './locales-lista/locales-lista.component'; 
 import { PuntosTuristicosListaComponent } from './puntos-turisticos-lista/puntos-turisticos-lista.component';
 import { EtiquetasTuristicasListaComponent } from './etiquetas-turisticas-lista/etiquetas-turisticas-lista.component';
 import { LocalEtiquetaListaComponent } from './local-etiqueta-lista/local-etiqueta-lista.component';
