@@ -74,17 +74,14 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          # Use your exact secret names from GitHub. These match what you provided.
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8A31F52B5BB94BAD9283500E746C1C13 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BE9698A6663A4DB18B6A470FF3D6D1AA }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1254A5CE47EA465396EA36864E61F1AB }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3 # <-- Make SURE this line is updated!
+        uses: azure/webapps-deploy@v3 # ¡ESTE ES EL CAMBIO CRÍTICO!
         with:
-          app-name: 'tursd-front' # Your Azure App Service name
+          app-name: 'tursd-front' # Asegúrate de que este sea el nombre EXACTO de tu App Service de frontend
           slot-name: 'Production'
-          # Since 'release.zip' now contains the direct contents of 'dist/back-tursd',
-          # the package path for deployment is simply the current directory.
-          package: '.'
+          package: '.
