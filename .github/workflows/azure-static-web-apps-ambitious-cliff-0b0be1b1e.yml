@@ -1,61 +1,81 @@
-name: Azure Static Web Apps CI/CD
+name: Build and Deploy Angular App to Azure App Service - tursd-front
 
 on:
   push:
     branches:
-      - master
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - master
+      - master # La rama principal de tu repositorio
+  workflow_dispatch: # Permite ejecutar el flujo de trabajo manualmente desde GitHub
 
 jobs:
-  build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    runs-on: ubuntu-latest
-    name: Build and Deploy Job
+  build_job: # Este job se encarga de construir y empaquetar la aplicación Angular
+    runs-on: ubuntu-latest # El sistema operativo del runner de GitHub Actions
     permissions:
-        id-token: write
-        contents: read
+      contents: read # Permiso para leer el código del repositorio
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # Descarga el código de tu repositorio
         with:
-          submodules: true
-          lfs: false
+          submodules: true # Si usas submódulos de Git
+          lfs: false       # Si usas Git LFS
+
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v3 # Configura el entorno Node.js
         with:
-          node-version: '18' # o la versión que uses
+          node-version: '20.x' # Versión de Node.js a usar (asegúrate de que sea compatible con tu Angular)
 
       - name: Install Angular CLI globally
-        run: npm install -g @angular/cli
+        run: npm install -g @angular/cli # Instala Angular CLI globalmente en el runner
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install project dependencies
+        run: npm install # Instala las dependencias de tu proyecto (package.json)
 
-      - name: Build Angular App
-        run: ng build
+      - name: Build Angular App for Production (with SSR)
+        # Compila la aplicación Angular para producción, incluyendo el prerrenderizado (SSR).
+        # La salida se guarda en 'dist/back-tursd'.
+        run: npx ng build --configuration production --output-path dist/back-tursd
 
-      - name: Deploy to Azure Static Web Apps
-        id: builddeploy
-        uses: Azure/static-web-apps-deploy@v1
+      - name: Zip artifact for deployment
+        # Comprime el contenido de la carpeta de salida de la compilación.
+        # Esto crea un archivo 'release.zip' que contiene directamente los archivos de 'dist/back-tursd'.
+        run: |
+          cd dist/back-tursd # Navega a la carpeta de salida de la compilación
+          zip -r ../../release.zip ./* # Comprime todo el contenido y guarda el zip en la raíz del repositorio
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4 # Sube el archivo zip como un artefacto para que el job de despliegue lo use
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_CLIFF_0B0BE1B1E }}
-          action: "upload"
-          app_location: "/"
-          api_location: ""
-          output_location: "dist/back-tursd/browser"
-          github_id_token: ${{ steps.idtoken.outputs.result }}
-          app_artifact_location: "/github/workspace/dist/back-tursd/browser"
-          ###### End of Repository/Build Configurations ######
+          name: angular-app-package # Nombre del artefacto
+          path: release.zip        # Ruta al archivo zip creado
 
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+  deploy_job: # Este job se encarga de descargar el artefacto y desplegarlo en Azure App Service
     runs-on: ubuntu-latest
-    name: Close Pull Request Job
+    needs: build_job # Este job depende de que el job 'build_job' se complete exitosamente
+    permissions:
+      id-token: write # Permiso para solicitar un token JWT para la autenticación en Azure
+      contents: read  # Permiso para leer el contenido del repositorio (para checkout, aunque aquí solo descarga artefacto)
+
     steps:
-      - name: Close Pull Request
-        id: closepullrequest
-        uses: Azure/static-web-apps-deploy@v1
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4 # Descarga el artefacto (el archivo zip) del job de construcción
         with:
-          action: "close"
+          name: angular-app-package # Nombre del artefacto a descargar
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip # Descomprime el archivo zip. Los archivos de tu app estarán en la raíz del directorio de trabajo.
+      
+      - name: Login to Azure
+        uses: azure/login@v2 # Acción para iniciar sesión en Azure usando una identidad de carga de trabajo
+        with:
+          # Estas son las credenciales (secretos) que Azure generó en tu repositorio de GitHub.
+          # Asegúrate de que los nombres coincidan exactamente con los que tienes en GitHub Secrets.
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8A31F52B5BB94BAD9283500E746C1C13 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BE9698A6663A4DB18B6A470FF3D6D1AA }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1254A5CE47EA465396EA36864E61F1AB }}
+
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3 # ¡Esta es la acción CORRECTA para desplegar en Azure App Service!
+        with:
+          app-name: 'tursd-front' # El nombre EXACTO de tu Azure App Service de frontend
+          slot-name: 'Production' # El slot de despliegue (normalmente 'Production' por defecto)
+          package: '.' # El paquete a desplegar es el directorio actual, ya que el zip se descomprimió aquí.
